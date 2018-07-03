@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 from flask import Flask, request, render_template, redirect, jsonify
 from werkzeug.utils import secure_filename
 import json
@@ -24,21 +25,25 @@ app.config['FULL'] = FULL
 def contact():
     if request.method == 'POST':
         try:
-            file_path = request.values['file']
-            file_name = file_path.split('\\')[-1]
-            if len(file_path) == len(file_name):
-                file_name = file_path.split('/')[-1]
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'],
+                      'temp.pdf'))
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                    'temp.pdf')
             cmd = 'java -jar ' + '/'.join(app.config['FULL'].split('\\'
                     )) + '/' + '/'.join(app.config['TIKA_EXE'
                     ].split('\\')) + 'tika-app.jar -t  ' \
+                + '/'.join(app.config['FULL'].split('\\')) + '/' \
                 + '/'.join(file_path.split('\\'))
             json_done = subprocess.check_output(cmd,
                     shell=True).decode('windows-1252')
-            res = {'name': file_name, 'text': json_done}
+            os.remove(file_path)
+            res = {'name': filename, 'text': json_done}
             return jsonify(res)
         except:
             return 'WS Error !'
-    return ''
+    return 'Welcome to pdf2txt WS'
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0',port = 5001)
